@@ -1,4 +1,11 @@
-/* QUIZ//NEON スタイルシート */
+/* QUIZ//NEON スタイルシート (Audio & Visual Update) */
+
+:root {
+  --neon-primary: #00ff88;
+  --neon-secondary: #ff0088;
+  --neon-background: #000000;
+  --neon-alert: #ff2200; /* ボス戦用の赤 */
+}
 
 * {
   margin: 0;
@@ -9,11 +16,12 @@
 body {
   font-family: 'Orbitron', monospace;
   background: #000;
-  color: #00ff88;
+  color: var(--neon-primary);
   overflow: hidden;
   user-select: none;
   position: relative;
   min-height: 100vh;
+  transition: color 0.5s ease;
 }
 
 /* 背景演出 */
@@ -36,35 +44,103 @@ body {
       linear-gradient(90deg, rgba(0, 255, 136, 0.1) 1px, transparent 1px);
   background-size: 50px 50px;
   animation: gridPulse 4s ease-in-out infinite;
+  transition: all 0.5s ease;
 }
 
 .data-stream {
   position: absolute;
   width: 2px;
   height: 100px;
-  background: linear-gradient(to bottom, transparent, #00ff88, transparent);
+  background: linear-gradient(to bottom, transparent, var(--neon-primary), transparent);
   left: 10%;
   animation: dataFlow 3s linear infinite;
-}
-
-.data-stream::after {
-  content: '';
-  position: absolute;
-  width: 2px;
-  height: 80px;
-  background: linear-gradient(to bottom, transparent, #ff0088, transparent);
-  left: 200px;
-  animation: dataFlow 2.5s linear infinite reverse;
 }
 
 .scanner-line {
   position: absolute;
   width: 100%;
   height: 3px;
-  background: linear-gradient(90deg, transparent, #00ff88, transparent);
+  background: linear-gradient(90deg, transparent, var(--neon-primary), transparent);
   top: 30%;
   animation: scannerMove 6s ease-in-out infinite;
-  box-shadow: 0 0 10px #00ff88;
+  box-shadow: 0 0 10px var(--neon-primary);
+}
+
+/* ボス戦用のオーバーレイ */
+.boss-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, transparent 50%, rgba(255, 0, 0, 0.2) 100%);
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  pointer-events: none;
+}
+
+/* ボスモード（赤色テーマ） */
+body.boss-active {
+  color: var(--neon-alert);
+}
+
+body.boss-active .neon-grid {
+  background-image: 
+      linear-gradient(rgba(255, 34, 0, 0.15) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 34, 0, 0.15) 1px, transparent 1px);
+}
+
+body.boss-active .screen {
+  border-color: var(--neon-alert);
+  box-shadow: 
+      0 0 30px rgba(255, 34, 0, 0.3),
+      inset 0 0 30px rgba(255, 34, 0, 0.1);
+}
+
+body.boss-active .choice-btn {
+    border-color: #622;
+    color: #f88;
+}
+
+body.boss-active .choice-btn:hover {
+    border-color: var(--neon-alert);
+    color: var(--neon-alert);
+    box-shadow: 0 0 15px rgba(255, 34, 0, 0.4);
+}
+
+body.boss-active .choice-number {
+    background: var(--neon-alert);
+    color: #fff;
+}
+
+body.boss-active .boss-overlay {
+    opacity: 1;
+    animation: alarmPulse 1s infinite alternate;
+}
+
+/* ボス警告テキスト */
+.boss-warning {
+    color: var(--neon-alert);
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-align: center;
+    margin-bottom: 15px;
+    text-shadow: 0 0 10px var(--neon-alert);
+    animation: textBlink 0.2s infinite;
+    letter-spacing: 5px;
+}
+.boss-warning.hidden {
+    display: none;
+}
+
+@keyframes textBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+@keyframes alarmPulse {
+    0% { opacity: 0.3; }
+    100% { opacity: 0.7; }
 }
 
 @keyframes gridPulse {
@@ -81,6 +157,21 @@ body {
 @keyframes scannerMove {
   0%, 100% { transform: translateY(0); opacity: 0.5; }
   50% { transform: translateY(50vh); opacity: 1; }
+}
+
+/* 画面シェイク（正解時） */
+@keyframes shake {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(-5px, -5px) rotate(-1deg); }
+  20% { transform: translate(5px, 5px) rotate(1deg); }
+  30% { transform: translate(-5px, 5px) rotate(0deg); }
+  40% { transform: translate(5px, -5px) rotate(1deg); }
+  50% { transform: translate(-2px, 2px) rotate(-1deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+
+.shake-effect {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
 }
 
 /* メインコンテナ */
@@ -100,23 +191,18 @@ body {
   max-width: 800px;
   text-align: center;
   background: rgba(0, 0, 0, 0.9);
-  border: 2px solid #00ff88;
+  border: 2px solid var(--neon-primary);
   border-radius: 10px;
   padding: 30px;
   box-shadow: 
       0 0 30px rgba(0, 255, 136, 0.3),
       inset 0 0 30px rgba(0, 255, 136, 0.1);
   position: relative;
+  transition: all 0.5s ease;
 }
 
 .screen.active {
   display: block;
-  animation: screenGlow 2s ease-in-out infinite alternate;
-}
-
-@keyframes screenGlow {
-  0% { box-shadow: 0 0 30px rgba(0, 255, 136, 0.3), inset 0 0 30px rgba(0, 255, 136, 0.1); }
-  100% { box-shadow: 0 0 50px rgba(0, 255, 136, 0.5), inset 0 0 50px rgba(0, 255, 136, 0.2); }
 }
 
 /* スタート画面 */
@@ -128,13 +214,13 @@ body {
   font-size: clamp(2.5rem, 6vw, 4rem);
   font-weight: 900;
   margin-bottom: 10px;
-  text-shadow: 0 0 20px #00ff88;
+  text-shadow: 0 0 20px var(--neon-primary);
   letter-spacing: 3px;
 }
 
 .neon-slash {
-  color: #ff0088;
-  text-shadow: 0 0 20px #ff0088;
+  color: var(--neon-secondary);
+  text-shadow: 0 0 20px var(--neon-secondary);
   animation: slashFlicker 2s ease-in-out infinite;
 }
 
@@ -156,8 +242,8 @@ body {
 }
 
 .status-online {
-  color: #00ff88;
-  text-shadow: 0 0 10px #00ff88;
+  color: var(--neon-primary);
+  text-shadow: 0 0 10px var(--neon-primary);
   animation: statusBlink 1.5s ease-in-out infinite;
 }
 
@@ -187,8 +273,8 @@ body {
 
 .neon-input {
   background: rgba(0, 0, 0, 0.8);
-  border: 2px solid #00ff88;
-  color: #00ff88;
+  border: 2px solid var(--neon-primary);
+  color: var(--neon-primary);
   padding: 12px 20px;
   font-family: 'Orbitron', monospace;
   font-size: 1.1rem;
@@ -200,9 +286,9 @@ body {
 }
 
 .neon-input:focus {
-  border-color: #ff0088;
+  border-color: var(--neon-secondary);
   box-shadow: 0 0 15px rgba(255, 0, 136, 0.5);
-  text-shadow: 0 0 5px #00ff88;
+  text-shadow: 0 0 5px var(--neon-primary);
 }
 
 .mode-selection {
@@ -228,14 +314,14 @@ body {
 
 .mode-btn.active,
 .mode-btn:hover {
-  border-color: #00ff88;
-  color: #00ff88;
-  text-shadow: 0 0 10px #00ff88;
+  border-color: var(--neon-primary);
+  color: var(--neon-primary);
+  text-shadow: 0 0 10px var(--neon-primary);
   box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
 }
 
 .start-btn {
-  background: linear-gradient(45deg, #00ff88, #88ffaa);
+  background: linear-gradient(45deg, var(--neon-primary), #88ffaa);
   border: none;
   color: #000;
   padding: 15px 40px;
@@ -300,8 +386,8 @@ body {
 .stat-value {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #00ff88;
-  text-shadow: 0 0 10px #00ff88;
+  color: var(--neon-primary);
+  text-shadow: 0 0 10px var(--neon-primary);
 }
 
 .timer-container {
@@ -321,7 +407,7 @@ body {
 
 .timer-fill {
   height: 100%;
-  background: linear-gradient(90deg, #00ff88, #ffaa00, #ff0088);
+  background: linear-gradient(90deg, var(--neon-primary), #ffaa00, var(--neon-secondary));
   width: 100%;
   transition: width 0.1s linear;
   border-radius: 4px;
@@ -330,7 +416,7 @@ body {
 .timer-text {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #00ff88;
+  color: var(--neon-primary);
   min-width: 30px;
   text-align: center;
 }
@@ -349,6 +435,13 @@ body {
   padding: 20px;
   border-radius: 8px;
   border: 1px solid rgba(0, 255, 136, 0.3);
+  transition: all 0.3s ease;
+}
+
+body.boss-active .question-text {
+    background: rgba(255, 34, 0, 0.15);
+    border-color: rgba(255, 34, 0, 0.5);
+    color: #ffd;
 }
 
 .choices-container {
@@ -377,14 +470,14 @@ body {
 }
 
 .choice-btn:hover {
-  border-color: #00ff88;
-  color: #00ff88;
+  border-color: var(--neon-primary);
+  color: var(--neon-primary);
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 255, 136, 0.2);
 }
 
 .choice-number {
-  background: #00ff88;
+  background: var(--neon-primary);
   color: #000;
   width: 30px;
   height: 30px;
@@ -395,6 +488,7 @@ body {
   font-weight: 700;
   font-size: 0.9rem;
   flex-shrink: 0;
+  transition: all 0.3s ease;
 }
 
 .choice-text {
@@ -403,16 +497,16 @@ body {
 }
 
 .choice-btn.correct {
-  border-color: #00ff88;
+  border-color: var(--neon-primary) !important;
   background: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
+  color: var(--neon-primary) !important;
   animation: correctPulse 0.5s ease;
 }
 
 .choice-btn.wrong {
-  border-color: #ff0088;
+  border-color: var(--neon-secondary) !important;
   background: rgba(255, 0, 136, 0.2);
-  color: #ff0088;
+  color: var(--neon-secondary) !important;
   animation: wrongShake 0.5s ease;
 }
 
@@ -435,7 +529,7 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   background: rgba(0, 0, 0, 0.95);
-  border: 2px solid #00ff88;
+  border: 2px solid var(--neon-primary);
   border-radius: 10px;
   padding: 30px;
   max-width: 90%;
@@ -466,14 +560,14 @@ body {
 
 .result-title {
   font-size: clamp(1.8rem, 4vw, 2.5rem);
-  color: #00ff88;
+  color: var(--neon-primary);
   margin-bottom: 30px;
-  text-shadow: 0 0 20px #00ff88;
+  text-shadow: 0 0 20px var(--neon-primary);
 }
 
 .memory-code {
   background: rgba(0, 255, 136, 0.1);
-  border: 1px solid #00ff88;
+  border: 1px solid var(--neon-primary);
   border-radius: 5px;
   padding: 15px;
   margin-bottom: 30px;
@@ -486,10 +580,10 @@ body {
 }
 
 .code-value {
-  color: #00ff88;
+  color: var(--neon-primary);
   font-weight: 700;
   font-size: 1.2rem;
-  text-shadow: 0 0 10px #00ff88;
+  text-shadow: 0 0 10px var(--neon-primary);
 }
 
 .result-stats {
@@ -514,10 +608,10 @@ body {
 }
 
 .result-value {
-  color: #00ff88;
+  color: var(--neon-primary);
   font-size: 1.3rem;
   font-weight: 700;
-  text-shadow: 0 0 10px #00ff88;
+  text-shadow: 0 0 10px var(--neon-primary);
 }
 
 .result-value.rank {
@@ -543,7 +637,7 @@ body {
 }
 
 .action-btn {
-  background: linear-gradient(45deg, #00ff88, #88ffaa);
+  background: linear-gradient(45deg, var(--neon-primary), #88ffaa);
   border: none;
   color: #000;
   padding: 12px 30px;
@@ -648,7 +742,6 @@ body {
   }
 }
 
-/* 音響効果用の非表示要素 */
 .audio-container {
   display: none;
 }
