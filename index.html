@@ -10,16 +10,20 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- 背景演出 -->
     <div class="city-background">
         <div class="neon-grid"></div>
         <div class="data-stream"></div>
         <div class="scanner-line"></div>
-    </div>
+        <div class="boss-overlay"></div> </div>
 
-    <!-- メイン画面 -->
+    <audio id="bgm-menu" loop>
+        <source src="audio/Dust_city.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="bgm-game" loop>
+        <source src="audio/Songs_of_the_Soulless.mp3" type="audio/mpeg">
+    </audio>
+
     <div class="main-container">
-        <!-- スタート画面 -->
         <div id="start-screen" class="screen active">
             <div class="logo-container">
                 <h1 class="game-title">QUIZ<span class="neon-slash">//</span>NEON</h1>
@@ -46,23 +50,24 @@
                     <span class="btn-text">記憶回復開始</span>
                     <span class="btn-effect"></span>
                 </button>
+
+                <p style="font-size: 0.7rem; color: #666; margin-top: 10px;">※ BGMが再生されます</p>
             </div>
         </div>
 
-        <!-- ゲーム画面 -->
         <div id="game-screen" class="screen">
             <div class="game-header">
                 <div class="stats-bar">
                     <div class="stat-item">
-                        <span class="stat-label">問題</span>
+                        <span class="stat-label">TARGET</span>
                         <span id="question-number" class="stat-value">1/10</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">記憶P</span>
+                        <span class="stat-label">MEMORY</span>
                         <span id="memory-points" class="stat-value">0</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">連続</span>
+                        <span class="stat-label">CHAIN</span>
                         <span id="streak" class="stat-value">0</span>
                     </div>
                 </div>
@@ -74,6 +79,8 @@
                     <span id="timer-text" class="timer-text">15</span>
                 </div>
             </div>
+
+            <div id="boss-warning" class="boss-warning hidden">WARNING: FIREWALL DETECTED</div>
 
             <div class="question-container">
                 <div id="question-text" class="question-text"></div>
@@ -106,7 +113,6 @@
             </div>
         </div>
 
-        <!-- リザルト画面 -->
         <div id="result-screen" class="screen">
             <div class="result-container">
                 <h2 class="result-title">記憶解析完了</h2>
@@ -151,7 +157,6 @@
         </div>
     </div>
 
-    <!-- 音声効果用 -->
     <div class="audio-container">
         <div id="se-correct" class="audio-se"></div>
         <div id="se-wrong" class="audio-se"></div>
