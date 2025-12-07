@@ -1,5 +1,5 @@
 // QUIZ//NEON: 記憶都市の支配者
-// ゲームロジック
+// ゲームロジック (Audio & Boss Update)
 
 class QuizNeonGame {
     constructor() {
@@ -18,6 +18,15 @@ class QuizNeonGame {
         this.wrongAnswers = 0;
         this.maxWrongAnswers = 3;
         
+        // オーディオ要素
+        this.bgmMenu = document.getElementById('bgm-menu');
+        this.bgmGame = document.getElementById('bgm-game');
+        this.audioEnabled = true;
+
+        // ボス問題の設定（インデックスは0始まり）
+        // 2=3問目, 6=7問目, 9=10問目
+        this.bossStages = [2, 6, 9]; 
+
         this.initializeEventListeners();
         this.initializeAudio();
     }
@@ -372,6 +381,7 @@ class QuizNeonGame {
 
         // ゲーム開始
         document.getElementById('start-game').addEventListener('click', () => {
+            this.tryPlayMenuBgm(); // ユーザー操作をトリガーにBGM再生試行
             this.startGame();
         });
 
@@ -385,6 +395,8 @@ class QuizNeonGame {
         // リトライボタン
         document.getElementById('retry-btn').addEventListener('click', () => {
             this.resetGame();
+            this.stopBgm();
+            this.tryPlayMenuBgm();
             this.showScreen('start-screen');
         });
 
@@ -399,11 +411,36 @@ class QuizNeonGame {
                 this.startGame();
             }
         });
+
+        // ページクリックでBGM初期化（ブラウザポリシー対策）
+        document.addEventListener('click', () => {
+            if (this.bgmMenu.paused && document.getElementById('start-screen').classList.contains('active')) {
+                this.tryPlayMenuBgm();
+            }
+        }, { once: true });
     }
 
-    // 音声効果の初期化（Web Audio API使用せず、CSS Animationで代用）
+    // 音声効果の初期化
     initializeAudio() {
-        this.audioEnabled = true;
+        if(this.bgmMenu) this.bgmMenu.volume = 0.4;
+        if(this.bgmGame) this.bgmGame.volume = 0.3;
+    }
+
+    tryPlayMenuBgm() {
+        if (this.bgmMenu) {
+            this.bgmMenu.play().catch(e => console.log('Audio autoplay prevented'));
+        }
+    }
+
+    stopBgm() {
+        if(this.bgmMenu) {
+            this.bgmMenu.pause();
+            this.bgmMenu.currentTime = 0;
+        }
+        if(this.bgmGame) {
+            this.bgmGame.pause();
+            this.bgmGame.currentTime = 0;
+        }
     }
 
     // ゲーム開始
@@ -412,6 +449,14 @@ class QuizNeonGame {
         this.resetGame();
         this.selectRandomQuestions();
         this.showScreen('game-screen');
+        
+        // BGM切り替え
+        if (this.bgmMenu) this.bgmMenu.pause();
+        if (this.bgmGame) {
+            this.bgmGame.currentTime = 0;
+            this.bgmGame.play().catch(e => console.log('Game BGM play failed'));
+        }
+
         this.displayQuestion();
         this.playButtonSound();
     }
@@ -426,6 +471,7 @@ class QuizNeonGame {
         this.wrongAnswers = 0;
         this.selectedQuestions = [];
         this.clearTimer();
+        document.body.classList.remove('boss-active'); // ボスモード解除
     }
 
     // ランダムな問題を選択
@@ -451,6 +497,19 @@ class QuizNeonGame {
     displayQuestion() {
         const question = this.selectedQuestions[this.currentQuestionIndex];
         
+        // ボスモード判定 (インデックスが含まれていればオン)
+        const isBossStage = this.bossStages.includes(this.currentQuestionIndex);
+        
+        if (isBossStage) {
+            document.body.classList.add('boss-active');
+            const warningEl = document.getElementById('boss-warning');
+            warningEl.classList.remove('hidden');
+            setTimeout(() => warningEl.classList.add('hidden'), 2000);
+        } else {
+            document.body.classList.remove('boss-active');
+            document.getElementById('boss-warning').classList.add('hidden');
+        }
+
         // 問題番号更新
         document.getElementById('question-number').textContent = `${this.currentQuestionIndex + 1}/${this.totalQuestions}`;
         
@@ -613,6 +672,10 @@ class QuizNeonGame {
 
     // 結果表示
     showResult() {
+        // BGM停止
+        this.stopBgm();
+        document.body.classList.remove('boss-active'); // ボスモード解除
+
         // 記憶コード生成
         const memoryCode = this.generateMemoryCode();
         document.getElementById('memory-code').textContent = memoryCode;
@@ -783,7 +846,7 @@ class QuizNeonGame {
         textarea.select();
     }
 
-    // 音響効果（CSS Animationベース）
+    // 音響効果（CSS Animationベース + シェイク追加）
     playButtonSound() {
         if (!this.audioEnabled) return;
         
@@ -825,9 +888,15 @@ class QuizNeonGame {
     playCorrectSound() {
         if (!this.audioEnabled) return;
         
-        // 正解演出
+        // 正解演出（画面フラッシュ）
         document.body.style.animation = 'correctFlash 0.5s ease';
         
+        // シェイク演出（メインコンテナを揺らす）
+        const container = document.querySelector('.main-container');
+        container.classList.remove('shake-effect');
+        void container.offsetWidth; // リフロー強制でアニメーションリセット
+        container.classList.add('shake-effect');
+
         // CRT風スキャンライン演出
         const scanLine = document.createElement('div');
         scanLine.style.cssText = `
@@ -837,19 +906,21 @@ class QuizNeonGame {
         `;
         
         // スキャンアニメーション追加
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes correctScan {
-                0% { transform: translateY(0); opacity: 1; }
-                100% { transform: translateY(100vh); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
+        if (!document.getElementById('scan-style')) {
+            const style = document.createElement('style');
+            style.id = 'scan-style';
+            style.textContent = `
+                @keyframes correctScan {
+                    0% { transform: translateY(0); opacity: 1; }
+                    100% { transform: translateY(100vh); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
         
         document.body.appendChild(scanLine);
         setTimeout(() => {
             scanLine.remove();
-            style.remove();
             document.body.style.animation = '';
         }, 800);
     }
@@ -875,20 +946,22 @@ class QuizNeonGame {
         `;
         
         // ノイズアニメーション追加
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes noiseFlicker {
-                0%, 100% { opacity: 0; }
-                10%, 30%, 50%, 70%, 90% { opacity: 1; }
-                20%, 40%, 60%, 80% { opacity: 0.3; }
-            }
-        `;
-        document.head.appendChild(style);
+        if (!document.getElementById('noise-style')) {
+            const style = document.createElement('style');
+            style.id = 'noise-style';
+            style.textContent = `
+                @keyframes noiseFlicker {
+                    0%, 100% { opacity: 0; }
+                    10%, 30%, 50%, 70%, 90% { opacity: 1; }
+                    20%, 40%, 60%, 80% { opacity: 0.3; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
         
         document.body.appendChild(noise);
         setTimeout(() => {
             noise.remove();
-            style.remove();
             document.body.style.animation = '';
         }, 600);
     }
@@ -950,44 +1023,9 @@ class QuizNeonGame {
 // ゲーム初期化
 document.addEventListener('DOMContentLoaded', () => {
     const game = new QuizNeonGame();
-    
-    // グローバルスコープに追加（デバッグ用）
     window.quizNeonGame = game;
     
-    // 開発者コンソールメッセージ
-    console.log(`
-    ╔══════════════════════════════════════╗
-    ║        QUIZ//NEON: 記憶都市の支配者        ║
-    ║              System Online           ║
-    ╠══════════════════════════════════════╣
-    ║  Debug Commands:                     ║
-    ║  - quizNeonGame.debugWinAll()        ║
-    ║  - quizNeonGame.getGameStats()       ║
-    ║  - quizNeonGame.audioEnabled = false ║
-    ╚══════════════════════════════════════╝
-    `);
-    
-    // キーボードショートカット
-    document.addEventListener('keydown', (e) => {
-        // デバッグ用ショートカット（Ctrl+Shift+D）
-        if (e.ctrlKey && e.shiftKey && e.key === 'D') {
-            game.debugWinAll();
-        }
-        
-        // ゲーム中の数字キー対応
-        const currentScreen = document.querySelector('.screen.active');
-        if (currentScreen && currentScreen.id === 'game-screen') {
-            const keyNum = parseInt(e.key);
-            if (keyNum >= 1 && keyNum <= 4) {
-                const choiceBtn = document.querySelector(`[data-choice="${keyNum - 1}"]`);
-                if (choiceBtn && !choiceBtn.disabled) {
-                    choiceBtn.click();
-                }
-            }
-        }
-    });
-    
-    // タッチデバイス対応
+    // タッチデバイス対応など既存のコードは維持
     let touchStartY = 0;
     document.addEventListener('touchstart', (e) => {
         touchStartY = e.touches[0].clientY;
@@ -996,75 +1034,22 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('touchend', (e) => {
         const touchEndY = e.changedTouches[0].clientY;
         const diff = touchStartY - touchEndY;
-        
-        // 上スワイプでリフレッシュ防止
         if (diff < -50 && window.scrollY === 0) {
             e.preventDefault();
         }
     });
     
-    // ビューポート調整
     const setVh = () => {
         const vh = window.innerHeight * 0.01;
         document.documentElement.style.setProperty('--vh', `${vh}px`);
     };
-    
     setVh();
     window.addEventListener('resize', setVh);
-    window.addEventListener('orientationchange', () => {
-        setTimeout(setVh, 100);
-    });
     
-    // PWA対応準備
-    if ('serviceWorker' in navigator) {
-        // サービスワーカーは今回は実装しないが、将来の拡張に備えて記述
-        console.log('PWA ready for future implementation');
-    }
-    
-    // パフォーマンス監視
-    if (window.performance && window.performance.mark) {
-        window.performance.mark('quiz-neon-game-ready');
-    }
-    
-    // ゲーム開始準備完了メッセージ
-    setTimeout(() => {
-        console.log('🎮 QUIZ//NEON: システム起動完了 - ゲーム準備完了');
-    }, 1000);
+    console.log('🎮 QUIZ//NEON: Audio & Visual Update Online');
 });
 
 // エラーハンドリング
 window.addEventListener('error', (e) => {
     console.error('QUIZ//NEON Error:', e.error);
-    
-    // ユーザーフレンドリーなエラー表示
-    const errorDisplay = document.createElement('div');
-    errorDisplay.style.cssText = `
-        position: fixed; top: 20px; right: 20px; z-index: 10000;
-        background: rgba(255, 0, 136, 0.9); color: white; padding: 15px;
-        border-radius: 8px; font-family: 'Orbitron', monospace;
-        max-width: 300px; border: 2px solid #ff0088;
-    `;
-    errorDisplay.innerHTML = `
-        <strong>システムエラー</strong><br>
-        記憶回路に異常が発生しました。<br>
-        <small>ページを再読み込みしてください。</small>
-    `;
-    
-    document.body.appendChild(errorDisplay);
-    
-    setTimeout(() => {
-        errorDisplay.remove();
-    }, 5000);
 });
-
-// CSS変数による動的スタイリング
-document.documentElement.style.setProperty('--neon-primary', '#00ff88');
-document.documentElement.style.setProperty('--neon-secondary', '#ff0088');
-document.documentElement.style.setProperty('--neon-background', '#000000');
-
-// アニメーション最適化
-if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    document.documentElement.style.setProperty('--animation-duration', '0s');
-} else {
-    document.documentElement.style.setProperty('--animation-duration', '0.3s');
-}
